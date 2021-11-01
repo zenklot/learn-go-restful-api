@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/julienschmidt/httprouter"
 	"github.com/zenklot/learn-go-restful-api/app"
 	"github.com/zenklot/learn-go-restful-api/controller"
 	"github.com/zenklot/learn-go-restful-api/exception"
 	"github.com/zenklot/learn-go-restful-api/helper"
+	"github.com/zenklot/learn-go-restful-api/middleware"
 	"github.com/zenklot/learn-go-restful-api/repository"
 	"github.com/zenklot/learn-go-restful-api/service"
 )
@@ -21,19 +21,13 @@ func main() {
 	categoryService := service.NewCategoryService(categoryRepository, db, validate)
 	categoryController := controller.NewCategoryController(categoryService)
 
-	router := httprouter.New()
-
-	router.GET("/api/categories", categoryController.FindAll)
-	router.GET("/api/categories/:categoryId", categoryController.FindById)
-	router.POST("/api/categories", categoryController.Create)
-	router.PUT("/api/categories/:categoryId", categoryController.Update)
-	router.DELETE("/api/categories/:categoryId", categoryController.Delete)
+	router := app.NewRouter(categoryController)
 
 	router.PanicHandler = exception.ErrorHandler
 
 	server := http.Server{
 		Addr:    "localhost:3000",
-		Handler: router,
+		Handler: middleware.NewAuthMiddleware(router),
 	}
 
 	err := server.ListenAndServe()
